@@ -161,7 +161,7 @@ public final class SSTableUtils {
             }
         }
 
-        cfMetadataBuilder.withPartitioner(Murmur3Partitioner.instance);
+        cfMetadataBuilder.withPartitioner(metadata.partitioner);
         final CFMetaData cfm = cfMetadataBuilder.build();
         cfm.compression(CompressionParams.DEFAULT);
 
