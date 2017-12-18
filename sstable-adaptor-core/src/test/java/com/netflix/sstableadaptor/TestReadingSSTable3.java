@@ -36,8 +36,8 @@ import java.util.List;
 /**
  *  Tests on reading local sstable and s3 sstable files.
  */
-public class TestSStableDataLister extends TestBaseSSTableFunSuite {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TestSStableDataLister.class);
+public class TestReadingSSTable3 extends TestBaseSSTableFunSuite {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestReadingSSTable3.class);
 
     /**
      * Setting up resources prior to running any tests.
@@ -45,7 +45,7 @@ public class TestSStableDataLister extends TestBaseSSTableFunSuite {
      */
     @BeforeClass
     public static void setup() throws Exception {
-        LOGGER.info("Running TestSStableDataLister setup ...");
+        LOGGER.info("Running TestReadingSSTable3 setup ...");
         TestBaseSSTableFunSuite.setup();
     }
 
@@ -55,7 +55,7 @@ public class TestSStableDataLister extends TestBaseSSTableFunSuite {
      */
     @AfterClass
     public static void teardown() throws Exception {
-        LOGGER.info("Tearing TestSStableDataLister down ...");
+        LOGGER.info("Tearing TestReadingSSTable3 down ...");
         TestBaseSSTableFunSuite.teardown();
     }
 
@@ -164,49 +164,6 @@ public class TestSStableDataLister extends TestBaseSSTableFunSuite {
         }
 
         Assert.assertEquals(4, counter);
-    }
-
-    @Test
-    public void TestMixedFormatRead() throws IOException {
-        String inputCql = "CREATE TABLE keyspace1.auditlogsbyid (\n    " +
-                "auditlogid timeuuid PRIMARY KEY,\n    createddate text,\n    " +
-                "payload text\n) WITH " +
-                "compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy'}\n    " +
-                "AND compression = {'sstable_compression': 'org.apache.cassandra.io.compress.LZ4Compressor'};";
-
-        final CFMetaData cfMetaData = CFMetaData.compile(inputCql,
-                                                   "casspactor",
-                                                   "org.apache.cassandra.dht.RandomPartitioner");
-
-        final SSTableSingleReader cass21Reader0 =
-                new SSTableSingleReader(CASS21_DATA_DIR +
-                                        "keyspace1/auditlogsbyid/keyspace1-auditlogsbyid-ka-1-Data.db",
-                                        cfMetaData, TestBaseSSTableFunSuite.HADOOP_CONF);
-        final SSTableSingleReader cass21Reader1 =
-                new SSTableSingleReader(CASS21_DATA_DIR +
-                                        "keyspace1/auditlogsbyid/keyspace1-auditlogsbyid-ka-3-Data.db",
-                                        cfMetaData, TestBaseSSTableFunSuite.HADOOP_CONF);
-        final SSTableSingleReader cass3Reader =
-                new SSTableSingleReader(CASS3_DATA_DIR + "keyspace1/auditlogsbyid/mc-1-big-Data.db ",
-                                        TestBaseSSTableFunSuite.HADOOP_CONF);
-
-
-        final List<ISSTableScanner> scanners = new ArrayList<>();
-        final int nowInSecs = (int) (System.currentTimeMillis() / 1000);
-
-        scanners.add(cass21Reader0.getSSTableScanner());
-        scanners.add(cass21Reader1.getSSTableScanner());
-        scanners.add(cass3Reader.getSSTableScanner());
-
-        int counter = 0;
-        try (SSTableIterator ci = new SSTableIterator(scanners, cass21Reader0.getCfMetaData(), nowInSecs)) {
-            while (ci.hasNext()) {
-                final RowIterator rowIterator = ci.next();
-                counter += printRowDetails(cfMetaData, rowIterator, false);
-            }
-        }
-
-        Assert.assertEquals(5, counter);
     }
 
 }

@@ -44,7 +44,7 @@ import java.util.Map;
  * Test reading SSTable's metadata using SSTableSingleReader API.
  */
 public class TestSSTableMetadata extends TestBaseSSTableFunSuite {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TestSStableDataLister.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestSSTableMetadata.class);
 
     /**
      * Setting up resources prior to running any tests.

@@ -18,13 +18,11 @@
 
 package org.apache.cassandra.io.util;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
 import org.apache.cassandra.io.FSReadError;
 import org.apache.cassandra.io.compress.BufferType;
-import org.apache.cassandra.io.sstable.CorruptSSTableException;
 import org.apache.cassandra.utils.FBUtilities;
+
+import java.nio.ByteBuffer;
 
 class SimpleChunkReader extends AbstractReaderFileProxy implements ChunkReader
 {

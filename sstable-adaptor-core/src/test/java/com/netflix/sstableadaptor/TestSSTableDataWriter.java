@@ -65,7 +65,7 @@ import java.util.List;
 
 /**
  *
- * Test writing out a new SSTable file locally.
+ * Test writing out a new SSTable file locally. Only writing out C* 3 format files
  */
 public class TestSSTableDataWriter extends TestBaseSSTableFunSuite {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestSSTableDataWriter.class);
