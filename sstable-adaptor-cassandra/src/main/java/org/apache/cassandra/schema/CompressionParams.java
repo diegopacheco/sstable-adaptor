@@ -49,7 +49,7 @@ public final class CompressionParams
     private static volatile boolean hasLoggedChunkLengthWarning;
     private static volatile boolean hasLoggedCrcCheckChanceWarning;
 
-    public static final int DEFAULT_CHUNK_LENGTH = 65536;
+    public static final int DEFAULT_CHUNK_LENGTH = 131072;
     public static final IVersionedSerializer<CompressionParams> serializer = new Serializer();
 
     public static final String CLASS = "class";

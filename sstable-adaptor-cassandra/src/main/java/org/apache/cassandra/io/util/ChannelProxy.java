@@ -185,7 +185,7 @@ public class ChannelProxy extends SharedCloseableImpl
             } else {
                 temBuff = buffer.array();
                 size = read(position, temBuff, 0, buffer.limit());
-                buffer.limit(buffer.capacity());
+                buffer.limit(size); //buffer.limit(buffer.capacity());
                 buffer.position(size);
             }
             return size;
