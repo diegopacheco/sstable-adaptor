@@ -96,7 +96,7 @@ public class TestReadingSSTable21 extends TestBaseSSTableFunSuite {
     public void testOnLocalDataCompositePartitionKey2() throws IOException {
         final String cql = "CREATE TABLE casspactor2.viewing_history (" +
                 "    user text PRIMARY KEY," +
-                "    movie_id text, dept name, " +
+                "    movie_id text " +
                 ") WITH compression = {'chunk_length_in_kb': '64', " +
                 "                       'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}";
 
@@ -447,80 +447,7 @@ public class TestReadingSSTable21 extends TestBaseSSTableFunSuite {
         System.out.println(RandomPartitioner.instance.decorateKey(bb).getToken().getTokenValue());
     }
 
-    @Test
-    public void TestMixedFormatRead1111() throws IOException {
-        String inputCql = "CREATE TABLE keyspace1.auditlogsbyid (   " +
-                "auditlogid timeuuid PRIMARY KEY,  " +
-                "createddate text,   " +
-                "payload text, " +
-                "name text) WITH " +
-                "compression = {'sstable_compression': 'org.apache.cassandra.io.compress.LZ4Compressor'};";
 
-        final CFMetaData cfMetaData = CFMetaData.compile(inputCql,
-                "casspactor",
-                "org.apache.cassandra.dht.RandomPartitioner");
-
-        final SSTableSingleReader cass21Reader0 =
-                new SSTableSingleReader("/Users/minhdo/workspace2/BDP/casspactor-oss/tem/nightwolf-auditlogsbyid-ka-228921-Data.db",
-                        cfMetaData, TestBaseSSTableFunSuite.HADOOP_CONF);
-
-        final List<ISSTableScanner> scanners = new ArrayList<>();
-        final int nowInSecs = (int) (System.currentTimeMillis() / 1000);
-        scanners.add(cass21Reader0.getSSTableScanner());
-
-        int counter = 0;
-        try (SSTableIterator ci = new SSTableIterator(scanners, cass21Reader0.getCfMetaData(), nowInSecs)) {
-            while (ci.hasNext()) {
-                final RowIterator rowIterator = ci.next();
-                counter += printRowDetails1(cfMetaData, rowIterator, false);
-            }
-        }
-
-        //Assert.assertEquals(5, counter);
-    }
-
-    protected int printRowDetails1(final CFMetaData cfMetaData,
-                                  final RowIterator rowIterator,
-                                  final boolean isThriftTable) {
-        int counter = 0;
-        final ByteBuffer partitionKey = rowIterator.partitionKey().getKey();
-
-        LOGGER.info("===================New Row==================================");
-        final List<Object> list = SSTableUtils.parsePrimaryKey(cfMetaData, partitionKey);
-
-        for (Object val : list) {
-            LOGGER.info("\tPartition key val ::::: " + val);
-        }
-
-        final Row staticRow = rowIterator.staticRow();
-        LOGGER.info("static info: " + staticRow.isStatic());
-
-        LOGGER.info("\tStatic: " + staticRow);
-        staticRow.cells().forEach(cell -> {
-            LOGGER.info("\tName: " + cell.column() + ", value: " + cell.column().cellValueType().compose(cell.value()));
-        });
-
-        if (isThriftTable)
-            counter++;
-
-        while (rowIterator.hasNext()) {
-            final Row row = (Row) rowIterator.next();
-            LOGGER.info("Clustering size: " + row.clustering().size());
-
-            final Iterable<Cell> cells = row.cells();
-            final Iterator<Cell> cellsIterator = cells.iterator();
-            LOGGER.info("\tCells: ");
-            while (cellsIterator.hasNext()) {
-                final Cell cell = cellsIterator.next();
-                LOGGER.info("\t\t" + cell.toString());
-            }
-
-            if (!isThriftTable)
-                counter++;
-        }
-
-        return counter;
-    }
 }
 
 

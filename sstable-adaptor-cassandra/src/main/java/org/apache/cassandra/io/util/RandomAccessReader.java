@@ -28,7 +28,7 @@ import java.nio.ByteOrder;
 public class RandomAccessReader extends RebufferingInputStream implements FileDataInput
 {
     // The default buffer size when the client doesn't specify it
-    public static final int DEFAULT_BUFFER_SIZE = 4096;
+    public static final int DEFAULT_BUFFER_SIZE = 32768;
 
     // offset of the last file mark
     private long markedPointer;

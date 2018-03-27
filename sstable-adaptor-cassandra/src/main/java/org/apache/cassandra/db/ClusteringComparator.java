@@ -189,6 +189,8 @@ public class ClusteringComparator implements Comparator<Clusterable>
             return v2 == null ? 0 : -1;
         if (v2 == null)
             return 1;
+        if (clusteringTypes.size() == 0)
+            return 0;
 
         return clusteringTypes.get(i).compare(v1, v2);
     }
