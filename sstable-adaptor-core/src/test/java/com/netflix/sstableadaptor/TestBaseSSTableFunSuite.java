@@ -24,7 +24,6 @@ import org.apache.cassandra.db.rows.Cell;
 import org.apache.cassandra.db.rows.Row;
 import org.apache.cassandra.db.rows.RowIterator;
 import org.apache.cassandra.io.sstable.ISSTableScanner;
-import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.Assert;
 import org.slf4j.Logger;
@@ -125,8 +124,9 @@ public class TestBaseSSTableFunSuite {
 
         final Row staticRow = rowIterator.staticRow();
         LOGGER.info("static info: " + staticRow.isStatic());
-
         LOGGER.info("\tStatic: " + staticRow);
+        LOGGER.info("\tStatic[isOriginal]?: " + staticRow.isOriginal());
+        LOGGER.info("\tStatic[hasChanged]?: " + staticRow.hasChanged());
         staticRow.cells().forEach(cell -> {
             LOGGER.info("\tName: " + cell.column() + ", value: " + cell.column().cellValueType().compose(cell.value()));
         });
@@ -136,6 +136,8 @@ public class TestBaseSSTableFunSuite {
 
         while (rowIterator.hasNext()) {
             final Row row = (Row) rowIterator.next();
+            LOGGER.info("\tisOriginal? " + row.isOriginal());
+            LOGGER.info("\thasChanged? " + row.hasChanged());
             LOGGER.info("\t------------------New sub-row ------------------------------");
             LOGGER.info("Clustering size: " + row.clustering().size());
             //for(int k=0; k<row.clustering().size(); k++)

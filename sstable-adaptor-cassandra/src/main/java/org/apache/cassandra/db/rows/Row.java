@@ -99,6 +99,13 @@ public interface Row extends Unfiltered, Collection<ColumnData>, Serializable
     public boolean isStatic();
 
     /**
+     * Determine whether there is a change on this row comparing to the previous Casspactor's compression
+     */
+    public boolean hasChanged();
+
+    public void setChanged(boolean flag);
+
+    /**
      * Whether the row has no information whatsoever. This means no PK liveness info, no row
      * deletion, no cells and no complex deletion info.
      *

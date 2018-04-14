@@ -41,6 +41,29 @@ import org.apache.cassandra.utils.FBUtilities;
  */
 public abstract class AbstractRow extends AbstractCollection<ColumnData> implements Row
 {
+    private boolean original = true;
+    private boolean changed = true;
+
+    @Override
+    public void setOriginal(boolean flag) {
+        this.original = flag;
+    }
+
+    @Override
+    public boolean isOriginal() {
+        return this.original;
+    }
+
+    @Override
+    public boolean hasChanged() {
+        return this.changed;
+    }
+
+    @Override
+    public void setChanged(boolean flag) {
+        this.changed = flag;
+    }
+
     public Unfiltered.Kind kind()
     {
         return Unfiltered.Kind.ROW;

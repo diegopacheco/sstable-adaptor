@@ -137,13 +137,13 @@ public abstract class CompressedChunkReader extends AbstractReaderFileProxy impl
                     }
                     catch (IOException e)
                     {
-                        attempt++;
                         channel.reopenInputStream();
                         if (attempt == maxAttempt) {
                             //TODO: what if this is still a network issue, not data corruption
                             throw new CorruptSSTableException(e, "Error on reading " + channel.filePath() +
                               " on num. attempt " + maxAttempt + " at position " + chunk.offset);
                         }
+                        attempt++;
                     }
                 }
 

@@ -68,4 +68,9 @@ public interface Unfiltered extends Clusterable
     {
         return kind() == Kind.RANGE_TOMBSTONE_MARKER;
     }
+
+    default boolean isOriginal() { return true; }  //whether the record comes from an original sstable file,
+                                                   // not from a modified one due to Casspactor
+
+    default void setOriginal(boolean flag) { }
 }

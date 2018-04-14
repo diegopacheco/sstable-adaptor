@@ -18,7 +18,6 @@ package com.netflix.sstableadaptor.sstable;
 
 
 import org.apache.cassandra.config.CFMetaData;
-import org.apache.cassandra.db.Columns;
 import org.apache.cassandra.db.DecoratedKey;
 import org.apache.cassandra.db.DeletionTime;
 import org.apache.cassandra.db.EmptyIterators;
@@ -26,6 +25,7 @@ import org.apache.cassandra.db.partitions.PartitionIterator;
 import org.apache.cassandra.db.partitions.PurgeFunction;
 import org.apache.cassandra.db.partitions.UnfilteredPartitionIterator;
 import org.apache.cassandra.db.partitions.UnfilteredPartitionIterators;
+import org.apache.cassandra.db.rows.ColumnData;
 import org.apache.cassandra.db.rows.RangeTombstoneMarker;
 import org.apache.cassandra.db.rows.Row;
 import org.apache.cassandra.db.rows.RowIterator;
@@ -36,6 +36,7 @@ import org.apache.cassandra.io.sstable.ISSTableScanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -59,6 +60,8 @@ public class SSTableIterator implements PartitionIterator {
     private final long totalBytes;
     private long bytesRead;
     private long totalSourceCQLRows;
+    private long uniqKeys;
+    private long deletedRows;
     private CFMetaData cfMetaData;
 
     /**
@@ -123,6 +126,10 @@ public class SSTableIterator implements PartitionIterator {
         mergeCounters[rows - 1] += 1;
     }
 
+    private void updateUniqKeys(final int count) {
+        uniqKeys += count;
+    }
+
     /**
      * Return total merged rows.
      *
@@ -162,27 +169,57 @@ public class SSTableIterator implements PartitionIterator {
                 }
 
                 assert merged > 0;
-
                 SSTableIterator.this.updateCounterFor(merged);
-
-                Columns statics = Columns.NONE;
-                Columns regulars = Columns.NONE;
-                for (UnfilteredRowIterator iter : versions) {
-                    if (iter != null) {
-                        statics = statics.mergeTo(iter.columns().statics);
-                        regulars = regulars.mergeTo(iter.columns().regulars);
-                    }
-                }
-
-                //final PartitionColumns partitionColumns = new PartitionColumns(statics, regulars);
-                //TODO: need to leverage these to track the operation counts
                 return new UnfilteredRowIterators.MergeListener() {
                     public void onMergedPartitionLevelDeletion(final DeletionTime mergedDeletion,
                                                                final DeletionTime[] versions) {
+                        deletedRows += 1;
                     }
 
                     public void onMergedRows(final Row merged, final Row[] versions) {
+                        SSTableIterator.this.updateUniqKeys(1);
+                        for(Row row: versions) {
+                            if (row != null && row.isOriginal()) {
+                                merged.setOriginal(true);
+                                break;
+                            }
+                        }
 
+                        if (versions.length == 1 && !versions[0].isOriginal()) {
+                            merged.setChanged(false);
+                        } else if (versions.length > 1) {
+                            merged.setChanged(false);
+                            for(Row row: versions) {
+                                if (row != null && row.dataSize() != merged.dataSize()) {
+                                    merged.setChanged(true);
+                                    break;
+                                }
+                            }
+
+                            //double check on timestamps when all sizes are the same
+                            if (!merged.hasChanged()) {
+                                long mergedRowTimestampTotal = 0;
+                                Iterator<ColumnData> mergedColumnDataIterator = merged.iterator();
+                                while (mergedColumnDataIterator.hasNext()) {
+                                    //overflow is ok
+                                    mergedRowTimestampTotal += mergedColumnDataIterator.next().maxTimestamp();
+                                }
+
+                                for(Row row: versions) {
+                                    if (row == null)
+                                        continue;
+                                    long rowTimestampTotal = 0;
+                                    Iterator<ColumnData> columnDataIterator = row.iterator();
+                                    while (columnDataIterator.hasNext())
+                                        rowTimestampTotal += columnDataIterator.next().maxTimestamp();
+
+                                    if (mergedRowTimestampTotal != rowTimestampTotal && merged != null) {
+                                        merged.setChanged(true);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     public void onMergedRangeTombstoneMarkers(final RangeTombstoneMarker mergedMarker,

@@ -33,6 +33,7 @@ public class SSTableIdentityIterator implements Comparable<SSTableIdentityIterat
     private final DecoratedKey key;
     private final DeletionTime partitionLevelDeletion;
     private final String filename;
+    private final String lowerCaseFilename;
 
     protected final SSTableSimpleIterator iterator;
     private final Row staticRow;
@@ -45,8 +46,15 @@ public class SSTableIdentityIterator implements Comparable<SSTableIdentityIterat
         this.key = key;
         this.partitionLevelDeletion = partitionLevelDeletion;
         this.filename = filename;
+        this.lowerCaseFilename = filename.toLowerCase();
         this.iterator = iterator;
         this.staticRow = iterator.readStaticRow();
+        if (lowerCaseFilename.contains("casspactor")) {
+            staticRow.setOriginal(true);
+        } else {
+            staticRow.setOriginal(false);
+        }
+
     }
 
     public static SSTableIdentityIterator create(SSTableReader sstable, RandomAccessReader file, DecoratedKey key)
@@ -54,8 +62,13 @@ public class SSTableIdentityIterator implements Comparable<SSTableIdentityIterat
         try
         {
             DeletionTime partitionLevelDeletion = DeletionTime.serializer.deserialize(file);
-            SerializationHelper helper = new SerializationHelper(sstable.metadata, sstable.descriptor.version.correspondingMessagingVersion(), SerializationHelper.Flag.LOCAL);
-            SSTableSimpleIterator iterator = SSTableSimpleIterator.create(sstable.metadata, file, sstable.header, helper, partitionLevelDeletion);
+            SerializationHelper helper =
+                    new SerializationHelper(sstable.metadata,
+                                            sstable.descriptor.version.correspondingMessagingVersion(),
+                                            SerializationHelper.Flag.LOCAL);
+            SSTableSimpleIterator iterator = SSTableSimpleIterator.create(sstable.metadata, file,
+                                                                          sstable.header, helper,
+                                                                          partitionLevelDeletion);
             return new SSTableIdentityIterator(sstable, key, partitionLevelDeletion, file.getPath(), iterator);
         }
         catch (IOException e)
@@ -65,14 +78,19 @@ public class SSTableIdentityIterator implements Comparable<SSTableIdentityIterat
         }
     }
 
-    public static SSTableIdentityIterator create(SSTableReader sstable, FileDataInput dfile, RowIndexEntry<?> indexEntry, DecoratedKey key, boolean tombstoneOnly)
+    public static SSTableIdentityIterator create(SSTableReader sstable, FileDataInput dfile,
+                                                 RowIndexEntry<?> indexEntry, DecoratedKey key,
+                                                 boolean tombstoneOnly)
     {
         try
         {
             dfile.seek(indexEntry.position);
             ByteBufferUtil.skipShortLength(dfile); // Skip partition key
             DeletionTime partitionLevelDeletion = DeletionTime.serializer.deserialize(dfile);
-            SerializationHelper helper = new SerializationHelper(sstable.metadata, sstable.descriptor.version.correspondingMessagingVersion(), SerializationHelper.Flag.LOCAL);
+            SerializationHelper helper =
+                    new SerializationHelper(sstable.metadata,
+                                            sstable.descriptor.version.correspondingMessagingVersion(),
+                                            SerializationHelper.Flag.LOCAL);
             SSTableSimpleIterator iterator = tombstoneOnly
                     ? SSTableSimpleIterator.createTombstoneOnly(sstable.metadata, dfile, sstable.header, helper, partitionLevelDeletion)
                     : SSTableSimpleIterator.create(sstable.metadata, dfile, sstable.header, helper, partitionLevelDeletion);
@@ -167,7 +185,17 @@ public class SSTableIdentityIterator implements Comparable<SSTableIdentityIterat
 
     protected Unfiltered doCompute()
     {
-        return iterator.next();
+        Unfiltered v = iterator.next();
+        if (v.kind() == Unfiltered.Kind.ROW) {
+            Row row = (Row) v;
+            if (lowerCaseFilename.contains("casspactor")) {
+                row.setOriginal(true);
+            } else {
+                row.setOriginal(false);
+            }
+        }
+
+        return v;
     }
 
     public void close()

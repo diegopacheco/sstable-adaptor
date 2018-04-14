@@ -20,6 +20,7 @@ package com.netflix.sstableadaptor;
 import com.netflix.sstableadaptor.sstable.SSTableIterator;
 import com.netflix.sstableadaptor.sstable.SSTableSingleReader;
 import org.apache.cassandra.config.CFMetaData;
+import org.apache.cassandra.db.rows.Row;
 import org.apache.cassandra.db.rows.RowIterator;
 import org.apache.cassandra.io.sstable.ISSTableScanner;
 import org.junit.AfterClass;
@@ -147,7 +148,7 @@ public class TestReadingSSTable3 extends TestBaseSSTableFunSuite {
         final SSTableSingleReader reader1 = new SSTableSingleReader(inputSSTableFullPathFileName,
                                                                    TestBaseSSTableFunSuite.HADOOP_CONF);
         final SSTableSingleReader reader2 = new SSTableSingleReader(inputSSTableFullPathFileName,
-                                                     TestBaseSSTableFunSuite.HADOOP_CONF);
+                                                                    TestBaseSSTableFunSuite.HADOOP_CONF);
         final CFMetaData cfMetaData = reader1.getCfMetaData();
         final List<ISSTableScanner> scanners = new ArrayList<>();
         final int nowInSecs = (int) (System.currentTimeMillis() / 1000);
@@ -164,6 +165,41 @@ public class TestReadingSSTable3 extends TestBaseSSTableFunSuite {
         }
 
         Assert.assertEquals(4, counter);
+    }
+
+    /**
+     * Test on the Change Column.
+     * @throws IOException
+     */
+    @Test
+    public void testCasspactorChangeColumn() throws IOException {
+        final String inputSSTableFullPathFileName = CASS3_DATA_DIR + "keyspace1/bills_compress/mc-6-big-Data.db";
+        final SSTableSingleReader reader1 = new SSTableSingleReader(inputSSTableFullPathFileName,
+                TestBaseSSTableFunSuite.HADOOP_CONF);
+
+        final String inputSSTableFullPathFileName2 = CASS3_DATA_DIR + "casspactor/bills_compress/mc-6-big-Data.db";
+        final SSTableSingleReader reader2 = new SSTableSingleReader(inputSSTableFullPathFileName2,
+                TestBaseSSTableFunSuite.HADOOP_CONF);
+
+        final List<ISSTableScanner> scanners = new ArrayList<>();
+        final int nowInSecs = (int) (System.currentTimeMillis() / 1000);
+
+        scanners.add(reader1.getSSTableScanner());
+        scanners.add(reader2.getSSTableScanner());
+
+        try (SSTableIterator ci = new SSTableIterator(scanners, reader1.getCfMetaData(), nowInSecs)) {
+            while (ci.hasNext()) {
+                final RowIterator rowIterator = ci.next();
+                final Row staticRow = rowIterator.staticRow();
+                Assert.assertEquals(false, staticRow.hasChanged());
+                Assert.assertEquals(true, staticRow.isOriginal());
+                while (rowIterator.hasNext()) {
+                    final Row row = rowIterator.next();
+                    Assert.assertEquals(false, row.hasChanged());
+                    Assert.assertEquals(true, row.isOriginal());
+                }
+            }
+        }
     }
 
 }
