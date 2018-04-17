@@ -140,8 +140,6 @@ public class TestBaseSSTableFunSuite {
             LOGGER.info("\thasChanged? " + row.hasChanged());
             LOGGER.info("\t------------------New sub-row ------------------------------");
             LOGGER.info("Clustering size: " + row.clustering().size());
-            //for(int k=0; k<row.clustering().size(); k++)
-            //    LOGGER.info("\tClustering: " + ByteBufferUtil.toInt(row.clustering().get(k)));
 
             final Iterable<Cell> cells = row.cells();
             final Iterator<Cell> cellsIterator = cells.iterator();

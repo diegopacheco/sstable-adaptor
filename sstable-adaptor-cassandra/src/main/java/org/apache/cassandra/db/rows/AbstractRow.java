@@ -61,7 +61,7 @@ public abstract class AbstractRow extends AbstractCollection<ColumnData> impleme
 
     @Override
     public void setChanged(boolean flag) {
-        this.changed = flag;
+       this.changed = flag;
     }
 
     public Unfiltered.Kind kind()

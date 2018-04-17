@@ -168,11 +168,99 @@ public class TestReadingSSTable3 extends TestBaseSSTableFunSuite {
     }
 
     /**
-     * Test on the Change Column.
+     * Test on the Original and Change Flag setting when we only have the original file(s).
+     * Note that original file must be downloaded and stored under a director path which has "casspactor" string
      * @throws IOException
      */
     @Test
-    public void testCasspactorChangeColumn() throws IOException {
+    public void testCasspactorOriginalFlagOnOriginalFileOnly() throws IOException {
+
+        final String inputSSTableFullPathFileName = CASS3_DATA_DIR + "casspactor/bills_compress/mc-6-big-Data.db";
+        final SSTableSingleReader reader = new SSTableSingleReader(inputSSTableFullPathFileName,
+                TestBaseSSTableFunSuite.HADOOP_CONF);
+
+        final List<ISSTableScanner> scanners = new ArrayList<>();
+        final int nowInSecs = (int) (System.currentTimeMillis() / 1000);
+
+        scanners.add(reader.getSSTableScanner());
+
+        try (SSTableIterator ci = new SSTableIterator(scanners, reader.getCfMetaData(), nowInSecs)) {
+            while (ci.hasNext()) {
+                final RowIterator rowIterator = ci.next();
+                final Row staticRow = rowIterator.staticRow();
+                Assert.assertEquals(true, staticRow.isOriginal());
+                Assert.assertEquals(true, staticRow.hasChanged());
+                while (rowIterator.hasNext()) {
+                    final Row row = rowIterator.next();
+                    Assert.assertEquals(true, row.isOriginal());
+                    Assert.assertEquals(true, row.hasChanged());
+                }
+            }
+        }
+
+        //Two identical files
+        final SSTableSingleReader reader2 = new SSTableSingleReader(inputSSTableFullPathFileName,
+                TestBaseSSTableFunSuite.HADOOP_CONF);
+        scanners.add(reader2.getSSTableScanner());
+        try (SSTableIterator ci = new SSTableIterator(scanners, reader.getCfMetaData(), nowInSecs)) {
+            while (ci.hasNext()) {
+                final RowIterator rowIterator = ci.next();
+                final Row staticRow = rowIterator.staticRow();
+                Assert.assertEquals(true, staticRow.isOriginal());
+                Assert.assertEquals(true, staticRow.hasChanged());
+                while (rowIterator.hasNext()) {
+                    final Row row = rowIterator.next();
+                    Assert.assertEquals(true, row.isOriginal());
+                    Assert.assertEquals(true, row.hasChanged());
+                }
+            }
+        }
+    }
+
+
+    /**
+     * Test on the Original and Change Flag setting when we only have the previously processed file.
+     * Note that processed file is normally stored on S3 or some storage and its directory path does not
+     * contains "casspactor" string.
+     * @throws IOException
+     */
+    @Test
+    public void testCasspactorOriginalFlagOnProcessedFileOnly() throws IOException {
+        final String inputSSTableFullPathFileName = CASS3_DATA_DIR + "keyspace1/bills_compress/mc-6-big-Data.db";
+        final SSTableSingleReader reader = new SSTableSingleReader(inputSSTableFullPathFileName,
+                TestBaseSSTableFunSuite.HADOOP_CONF);
+        final SSTableSingleReader reader2 = new SSTableSingleReader(inputSSTableFullPathFileName,
+                TestBaseSSTableFunSuite.HADOOP_CONF);
+
+        final List<ISSTableScanner> scanners = new ArrayList<>();
+        final int nowInSecs = (int) (System.currentTimeMillis() / 1000);
+
+        scanners.add(reader.getSSTableScanner());
+        scanners.add(reader2.getSSTableScanner());
+
+        try (SSTableIterator ci = new SSTableIterator(scanners, reader.getCfMetaData(), nowInSecs)) {
+            while (ci.hasNext()) {
+                final RowIterator rowIterator = ci.next();
+                final Row staticRow = rowIterator.staticRow();
+                Assert.assertEquals(false, staticRow.isOriginal());
+                Assert.assertEquals(false, staticRow.hasChanged());
+                while (rowIterator.hasNext()) {
+                    final Row row = rowIterator.next();
+                    Assert.assertEquals(false, row.isOriginal());
+                    Assert.assertEquals(false, row.hasChanged());
+                }
+            }
+        }
+    }
+
+
+    /**
+     * Test on the Original and Change Flag setting when we have a mixed of both original and processed files and they
+     * both have the same content.
+     * @throws IOException
+     */
+    @Test
+    public void testCasspactorOriginalFlagOnMixingWithSameContent() throws IOException {
         final String inputSSTableFullPathFileName = CASS3_DATA_DIR + "keyspace1/bills_compress/mc-6-big-Data.db";
         final SSTableSingleReader reader1 = new SSTableSingleReader(inputSSTableFullPathFileName,
                 TestBaseSSTableFunSuite.HADOOP_CONF);
@@ -191,15 +279,104 @@ public class TestReadingSSTable3 extends TestBaseSSTableFunSuite {
             while (ci.hasNext()) {
                 final RowIterator rowIterator = ci.next();
                 final Row staticRow = rowIterator.staticRow();
-                Assert.assertEquals(false, staticRow.hasChanged());
                 Assert.assertEquals(true, staticRow.isOriginal());
+                Assert.assertEquals(false, staticRow.hasChanged());
                 while (rowIterator.hasNext()) {
                     final Row row = rowIterator.next();
-                    Assert.assertEquals(false, row.hasChanged());
                     Assert.assertEquals(true, row.isOriginal());
+                    Assert.assertEquals(false, row.hasChanged());
                 }
             }
         }
     }
+
+    /**
+     * Test on the Original and Change Flag setting when we have a mixed of both original and processed files which
+     * have the different content on different disjoint set of keys.
+     * @throws IOException
+     */
+    @Test
+    public void testCasspactorOriginalFlagOnMixingWithDifferentContentOnDifferentKeys() throws IOException {
+        final String inputSSTableFullPathFileName = CASS3_DATA_DIR + "keyspace1/bills_compress/mc-2-big-Data.db";
+        final SSTableSingleReader reader1 = new SSTableSingleReader(inputSSTableFullPathFileName,
+                TestBaseSSTableFunSuite.HADOOP_CONF);
+
+        final String inputSSTableFullPathFileName2 = CASS3_DATA_DIR + "casspactor/bills_compress/mc-6-big-Data.db";
+        final SSTableSingleReader reader2 = new SSTableSingleReader(inputSSTableFullPathFileName2,
+                TestBaseSSTableFunSuite.HADOOP_CONF);
+
+        final List<ISSTableScanner> scanners = new ArrayList<>();
+        final int nowInSecs = (int) (System.currentTimeMillis() / 1000);
+
+        scanners.add(reader1.getSSTableScanner());
+        scanners.add(reader2.getSSTableScanner());
+
+        try (SSTableIterator ci = new SSTableIterator(scanners, reader1.getCfMetaData(), nowInSecs)) {
+            while (ci.hasNext()) {
+                final RowIterator rowIterator = ci.next();
+                String partitionKey = new String(rowIterator.partitionKey().getKey().array());
+                final Row staticRow = rowIterator.staticRow();
+                System.out.println("partitionKey: " + partitionKey);
+                if (partitionKey.equals("user11") || partitionKey.equals("user12")) {
+                    Assert.assertEquals(false, staticRow.isOriginal());
+                    Assert.assertEquals(false, staticRow.hasChanged());
+                    while (rowIterator.hasNext()) {
+                        final Row row = rowIterator.next();
+                        Assert.assertEquals(false, row.isOriginal());
+                        Assert.assertEquals(false, row.hasChanged());
+                    }
+                } else {
+                    Assert.assertEquals(true, staticRow.isOriginal());
+                    Assert.assertEquals(true, staticRow.hasChanged());
+                    while (rowIterator.hasNext()) {
+                        final Row row = rowIterator.next();
+                        Assert.assertEquals(true, row.isOriginal());
+                        Assert.assertEquals(true, row.hasChanged());
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Test on the Original and Change Flag setting when we have a mixed of both original and processed files which
+     * have the different content on same set of keys.
+     * @throws IOException
+     */
+    @Test
+    public void testCasspactorOriginalFlagOnMixingWithDifferentContentOnSameKeys() throws IOException {
+        final String inputSSTableFullPathFileName = CASS3_DATA_DIR + "keyspace1/bills_compress/mc-2-big-Data.db";
+        final SSTableSingleReader reader1 = new SSTableSingleReader(inputSSTableFullPathFileName,
+                TestBaseSSTableFunSuite.HADOOP_CONF);
+
+        final String inputSSTableFullPathFileName2 = CASS3_DATA_DIR + "casspactor/bills_compress/mc-3-big-Data.db";
+        final SSTableSingleReader reader2 = new SSTableSingleReader(inputSSTableFullPathFileName2,
+                TestBaseSSTableFunSuite.HADOOP_CONF);
+
+        final List<ISSTableScanner> scanners = new ArrayList<>();
+        final int nowInSecs = (int) (System.currentTimeMillis() / 1000);
+
+        scanners.add(reader1.getSSTableScanner());
+        scanners.add(reader2.getSSTableScanner());
+
+        try (SSTableIterator ci = new SSTableIterator(scanners, reader1.getCfMetaData(), nowInSecs)) {
+            while (ci.hasNext()) {
+                final RowIterator rowIterator = ci.next();
+                String partitionKey = new String(rowIterator.partitionKey().getKey().array());
+                final Row staticRow = rowIterator.staticRow();
+
+                if (partitionKey.equals("user12")) {
+                    Assert.assertEquals(true, staticRow.isOriginal());
+                    Assert.assertEquals(true, staticRow.hasChanged());
+                    while (rowIterator.hasNext()) {
+                        final Row row = rowIterator.next();
+                        Assert.assertEquals(true, row.isOriginal());
+                        Assert.assertEquals(true, row.hasChanged());
+                    }
+                }
+            }
+        }
+    }
+
 
 }

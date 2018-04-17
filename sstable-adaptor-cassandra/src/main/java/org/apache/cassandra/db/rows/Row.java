@@ -102,7 +102,6 @@ public interface Row extends Unfiltered, Collection<ColumnData>, Serializable
      * Determine whether there is a change on this row comparing to the previous Casspactor's compression
      */
     public boolean hasChanged();
-
     public void setChanged(boolean flag);
 
     /**

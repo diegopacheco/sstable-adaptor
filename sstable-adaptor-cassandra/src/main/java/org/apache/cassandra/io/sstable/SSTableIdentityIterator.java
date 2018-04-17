@@ -29,6 +29,7 @@ import org.apache.cassandra.utils.ByteBufferUtil;
 
 public class SSTableIdentityIterator implements Comparable<SSTableIdentityIterator>, UnfilteredRowIterator
 {
+    private final static String ORIGINAL_FILE_IDENTIFIER = System.getProperty("original_file_identifier", "casspactor");
     private final SSTableReader sstable;
     private final DecoratedKey key;
     private final DeletionTime partitionLevelDeletion;
@@ -49,7 +50,7 @@ public class SSTableIdentityIterator implements Comparable<SSTableIdentityIterat
         this.lowerCaseFilename = filename.toLowerCase();
         this.iterator = iterator;
         this.staticRow = iterator.readStaticRow();
-        if (lowerCaseFilename.contains("casspactor")) {
+        if (lowerCaseFilename.contains(ORIGINAL_FILE_IDENTIFIER)) {
             staticRow.setOriginal(true);
         } else {
             staticRow.setOriginal(false);
@@ -188,7 +189,7 @@ public class SSTableIdentityIterator implements Comparable<SSTableIdentityIterat
         Unfiltered v = iterator.next();
         if (v.kind() == Unfiltered.Kind.ROW) {
             Row row = (Row) v;
-            if (lowerCaseFilename.contains("casspactor")) {
+            if (lowerCaseFilename.contains(ORIGINAL_FILE_IDENTIFIER)) {
                 row.setOriginal(true);
             } else {
                 row.setOriginal(false);

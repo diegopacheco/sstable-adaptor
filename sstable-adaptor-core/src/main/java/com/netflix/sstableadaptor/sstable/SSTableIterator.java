@@ -156,6 +156,10 @@ public class SSTableIterator implements PartitionIterator {
         return bytesRead;
     }
 
+    private boolean isEmpty(Row row) {
+        return row == null || row.isEmpty();
+    }
+
     private UnfilteredPartitionIterators.MergeListener listener() {
         return new UnfilteredPartitionIterators.MergeListener() {
             public UnfilteredRowIterators.MergeListener
@@ -178,35 +182,52 @@ public class SSTableIterator implements PartitionIterator {
 
                     public void onMergedRows(final Row merged, final Row[] versions) {
                         SSTableIterator.this.updateUniqKeys(1);
-                        for(Row row: versions) {
-                            if (row != null && row.isOriginal()) {
-                                merged.setOriginal(true);
-                                break;
+
+                        if (versions.length > 1) {
+                            boolean isOriginal = false;
+                            for (Row row : versions) {
+                                if (!isEmpty(row) && row.isOriginal()) {
+                                    isOriginal = true;
+                                    break;
+                                }
                             }
+                            merged.setOriginal(isOriginal);
                         }
 
-                        if (versions.length == 1 && !versions[0].isOriginal()) {
-                            merged.setChanged(false);
-                        } else if (versions.length > 1) {
-                            merged.setChanged(false);
+                        int counter = 0;
+                        boolean hasOneOriginal = false;
+                        for(Row row: versions) {
+                            if (isEmpty(row))
+                                continue;
+                            counter++;
+                            if (row.isOriginal())
+                                hasOneOriginal = true;
+                        }
+
+                        if (counter == 1) {
+                            merged.setChanged(hasOneOriginal);
+                        } else {
+                            boolean isChanged = false;
                             for(Row row: versions) {
-                                if (row != null && row.dataSize() != merged.dataSize()) {
-                                    merged.setChanged(true);
+                                if (isEmpty(row))
+                                    continue;
+
+                                if (row.isOriginal() && row.dataSize() != merged.dataSize()) {
+                                    isChanged = true;
                                     break;
                                 }
                             }
 
                             //double check on timestamps when all sizes are the same
-                            if (!merged.hasChanged()) {
+                            if (!isChanged) {
                                 long mergedRowTimestampTotal = 0;
                                 Iterator<ColumnData> mergedColumnDataIterator = merged.iterator();
                                 while (mergedColumnDataIterator.hasNext()) {
-                                    //overflow is ok
                                     mergedRowTimestampTotal += mergedColumnDataIterator.next().maxTimestamp();
                                 }
 
                                 for(Row row: versions) {
-                                    if (row == null)
+                                    if (isEmpty(row))
                                         continue;
                                     long rowTimestampTotal = 0;
                                     Iterator<ColumnData> columnDataIterator = row.iterator();
@@ -214,11 +235,12 @@ public class SSTableIterator implements PartitionIterator {
                                         rowTimestampTotal += columnDataIterator.next().maxTimestamp();
 
                                     if (mergedRowTimestampTotal != rowTimestampTotal && merged != null) {
-                                        merged.setChanged(true);
+                                        isChanged = true;
                                         break;
                                     }
                                 }
                             }
+                            merged.setChanged(isChanged);
                         }
                     }
 
