@@ -175,7 +175,7 @@ public class TestReadingSSTable3 extends TestBaseSSTableFunSuite {
     @Test
     public void testCasspactorOriginalFlagOnOriginalFileOnly() throws IOException {
 
-        final String inputSSTableFullPathFileName = CASS3_DATA_DIR + "casspactor/bills_compress/mc-6-big-Data.db";
+        final String inputSSTableFullPathFileName = CASS3_DATA_DIR + "casspactor_temp/bills_compress/mc-6-big-Data.db";
         final SSTableSingleReader reader = new SSTableSingleReader(inputSSTableFullPathFileName,
                 TestBaseSSTableFunSuite.HADOOP_CONF);
 
@@ -265,7 +265,7 @@ public class TestReadingSSTable3 extends TestBaseSSTableFunSuite {
         final SSTableSingleReader reader1 = new SSTableSingleReader(inputSSTableFullPathFileName,
                 TestBaseSSTableFunSuite.HADOOP_CONF);
 
-        final String inputSSTableFullPathFileName2 = CASS3_DATA_DIR + "casspactor/bills_compress/mc-6-big-Data.db";
+        final String inputSSTableFullPathFileName2 = CASS3_DATA_DIR + "casspactor_temp/bills_compress/mc-6-big-Data.db";
         final SSTableSingleReader reader2 = new SSTableSingleReader(inputSSTableFullPathFileName2,
                 TestBaseSSTableFunSuite.HADOOP_CONF);
 
@@ -301,7 +301,7 @@ public class TestReadingSSTable3 extends TestBaseSSTableFunSuite {
         final SSTableSingleReader reader1 = new SSTableSingleReader(inputSSTableFullPathFileName,
                 TestBaseSSTableFunSuite.HADOOP_CONF);
 
-        final String inputSSTableFullPathFileName2 = CASS3_DATA_DIR + "casspactor/bills_compress/mc-6-big-Data.db";
+        final String inputSSTableFullPathFileName2 = CASS3_DATA_DIR + "casspactor_temp/bills_compress/mc-6-big-Data.db";
         final SSTableSingleReader reader2 = new SSTableSingleReader(inputSSTableFullPathFileName2,
                 TestBaseSSTableFunSuite.HADOOP_CONF);
 
@@ -349,7 +349,7 @@ public class TestReadingSSTable3 extends TestBaseSSTableFunSuite {
         final SSTableSingleReader reader1 = new SSTableSingleReader(inputSSTableFullPathFileName,
                 TestBaseSSTableFunSuite.HADOOP_CONF);
 
-        final String inputSSTableFullPathFileName2 = CASS3_DATA_DIR + "casspactor/bills_compress/mc-3-big-Data.db";
+        final String inputSSTableFullPathFileName2 = CASS3_DATA_DIR + "casspactor_temp/bills_compress/mc-3-big-Data.db";
         final SSTableSingleReader reader2 = new SSTableSingleReader(inputSSTableFullPathFileName2,
                 TestBaseSSTableFunSuite.HADOOP_CONF);
 

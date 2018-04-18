@@ -29,7 +29,7 @@ import org.apache.cassandra.utils.ByteBufferUtil;
 
 public class SSTableIdentityIterator implements Comparable<SSTableIdentityIterator>, UnfilteredRowIterator
 {
-    private final static String ORIGINAL_FILE_IDENTIFIER = System.getProperty("original_file_identifier", "casspactor");
+    private final static String ORIGINAL_FILE_IDENTIFIER = System.getProperty("original_file_identifier", "casspactor_temp");
     private final SSTableReader sstable;
     private final DecoratedKey key;
     private final DeletionTime partitionLevelDeletion;

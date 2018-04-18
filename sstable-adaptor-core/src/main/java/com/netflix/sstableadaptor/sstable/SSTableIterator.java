@@ -50,7 +50,8 @@ import java.util.List;
  * </ul>
  *
  */
-public class SSTableIterator implements PartitionIterator {
+public class SSTableIterator implements PartitionIterator
+{
     private static final Logger LOGGER = LoggerFactory.getLogger(SSTableIterator.class);
     private static final long UNFILTERED_TO_UPDATE_PROGRESS = 100;
 
@@ -80,7 +81,8 @@ public class SSTableIterator implements PartitionIterator {
      * @param nowInSec   - now in secs
      */
     @SuppressWarnings("resource")
-    public SSTableIterator(final List<ISSTableScanner> scanners, final CFMetaData cfMetaData, final int nowInSec) {
+    public SSTableIterator(final List<ISSTableScanner> scanners, final CFMetaData cfMetaData, final int nowInSec)
+    {
         this.cfMetaData = cfMetaData;
         this.scanners = scanners;
         this.nowInSec = nowInSec;
@@ -107,7 +109,8 @@ public class SSTableIterator implements PartitionIterator {
      *
      * @return true/false
      */
-    public boolean isForThrift() {
+    public boolean isForThrift()
+    {
         return false;
     }
 
@@ -116,17 +119,20 @@ public class SSTableIterator implements PartitionIterator {
      *
      * @return CFMetaData
      */
-    public CFMetaData metadata() {
+    public CFMetaData metadata()
+    {
         return this.cfMetaData;
     }
 
 
-    private void updateCounterFor(final int rows) {
+    private void updateCounterFor(final int rows)
+    {
         assert rows > 0 && rows - 1 < mergeCounters.length;
         mergeCounters[rows - 1] += 1;
     }
 
-    private void updateUniqKeys(final int count) {
+    private void updateUniqKeys(final int count)
+    {
         uniqKeys += count;
     }
 
@@ -135,7 +141,8 @@ public class SSTableIterator implements PartitionIterator {
      *
      * @return long array
      */
-    public long[] getMergedRowCounts() {
+    public long[] getMergedRowCounts()
+    {
         return mergeCounters;
     }
 
@@ -144,7 +151,8 @@ public class SSTableIterator implements PartitionIterator {
      *
      * @return long
      */
-    public long getTotalSourceCQLRows() {
+    public long getTotalSourceCQLRows()
+    {
         return totalSourceCQLRows;
     }
 
@@ -152,19 +160,23 @@ public class SSTableIterator implements PartitionIterator {
      * Return read bytes.
      * @return long
      */
-    public long getBytesRead() {
+    public long getBytesRead()
+    {
         return bytesRead;
     }
 
-    private boolean isEmpty(Row row) {
+    private boolean isEmpty(Row row)
+    {
         return row == null || row.isEmpty();
     }
 
-    private UnfilteredPartitionIterators.MergeListener listener() {
+    private UnfilteredPartitionIterators.MergeListener listener()
+    {
         return new UnfilteredPartitionIterators.MergeListener() {
             public UnfilteredRowIterators.MergeListener
             getRowMergeListener(final DecoratedKey partitionKey,
-                                final List<UnfilteredRowIterator> versions) {
+                                final List<UnfilteredRowIterator> versions)
+            {
                 int merged = 0;
                 for (UnfilteredRowIterator iter : versions) {
                     if (iter != null) {
@@ -176,7 +188,8 @@ public class SSTableIterator implements PartitionIterator {
                 SSTableIterator.this.updateCounterFor(merged);
                 return new UnfilteredRowIterators.MergeListener() {
                     public void onMergedPartitionLevelDeletion(final DeletionTime mergedDeletion,
-                                                               final DeletionTime[] versions) {
+                                                               final DeletionTime[] versions)
+                    {
                         deletedRows += 1;
                     }
 
@@ -245,10 +258,12 @@ public class SSTableIterator implements PartitionIterator {
                     }
 
                     public void onMergedRangeTombstoneMarkers(final RangeTombstoneMarker mergedMarker,
-                                                              final RangeTombstoneMarker[] versions) {
+                                                              final RangeTombstoneMarker[] versions)
+                    {
                     }
 
-                    public void close() {
+                    public void close()
+                    {
                     }
                 };
             }
@@ -258,7 +273,8 @@ public class SSTableIterator implements PartitionIterator {
         };
     }
 
-    private void updateBytesRead() {
+    private void updateBytesRead()
+    {
         long n = 0;
         for (ISSTableScanner scanner : scanners) {
             n += scanner.getCurrentPosition();
@@ -271,7 +287,8 @@ public class SSTableIterator implements PartitionIterator {
      *
      * @return true/false
      */
-    public boolean hasNext() {
+    public boolean hasNext()
+    {
         return compacted.hasNext();
     }
 
@@ -280,21 +297,24 @@ public class SSTableIterator implements PartitionIterator {
      *
      * @return RowIterator
      */
-    public RowIterator next() {
+    public RowIterator next()
+    {
         return compacted.next();
     }
 
     /**
      * Unsupported.
      */
-    public void remove() {
+    public void remove()
+    {
         throw new UnsupportedOperationException();
     }
 
     /**
      * close the underneath iterator.
      */
-    public void close() {
+    public void close()
+    {
         try {
             compacted.close();
             for (ISSTableScanner scanner : scanners) {
@@ -305,29 +325,34 @@ public class SSTableIterator implements PartitionIterator {
         }
     }
 
-    private final class Purger extends PurgeFunction {
+    private final class Purger extends PurgeFunction
+    {
         private DecoratedKey currentKey;
         private long maxPurgeableTimestamp;
         private boolean hasCalculatedMaxPurgeableTimestamp;
 
         private long compactedUnfiltered;
 
-        private Purger(final int nowInSec) {
+        private Purger(final int nowInSec)
+        {
             super(false, nowInSec, nowInSec, Integer.MAX_VALUE, true);
         }
 
         @Override
-        protected void onEmptyPartitionPostPurge(final DecoratedKey key) {
+        protected void onEmptyPartitionPostPurge(final DecoratedKey key)
+        {
         }
 
         @Override
-        protected void onNewPartition(final DecoratedKey key) {
+        protected void onNewPartition(final DecoratedKey key)
+        {
             currentKey = key;
             hasCalculatedMaxPurgeableTimestamp = false;
         }
 
         @Override
-        protected void updateProgress() {
+        protected void updateProgress()
+        {
             totalSourceCQLRows++;
             if ((++compactedUnfiltered) % UNFILTERED_TO_UPDATE_PROGRESS == 0) {
                 updateBytesRead();
@@ -339,7 +364,8 @@ public class SSTableIterator implements PartitionIterator {
          * containing `currentKey` outside of the set of sstables involved in this compaction. This is computed lazily
          * on demand as we only need this if there is tombstones and this a bit expensive (see #8914).
          */
-        protected long getMaxPurgeableTimestamp() {
+        protected long getMaxPurgeableTimestamp()
+        {
             if (!hasCalculatedMaxPurgeableTimestamp) {
                 hasCalculatedMaxPurgeableTimestamp = true;
                 maxPurgeableTimestamp = Long.MAX_VALUE; //Todo: will make it usable
