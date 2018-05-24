@@ -52,15 +52,18 @@ class SimpleChunkReader extends AbstractReaderFileProxy implements ChunkReader
                 channel.read(buffer, position);
                 isSuccess = true;
             }
-            catch (FSReadError e)
+            catch (Exception e)
             {
-               attempt++;
                channel.reopenInputStream();
                if (attempt == maxAttempt) {
                   //TODO: what if this is still a network issue, not data corruption
                   throw new FSReadError(e, "Error on reading " + channel.filePath() +
                         " on num. attempt " + maxAttempt + " at position " + position);
                }
+            }
+            finally
+            {
+                attempt++;
             }
         }
         buffer.flip();
